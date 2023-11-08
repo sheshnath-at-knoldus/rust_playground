@@ -1,0 +1,42 @@
+
+use pnet::datalink::{self, NetworkInterface};
+use pnet::datalink::Channel;
+
+fn main() {
+    // Get a list of available network interfaces
+    let interfaces = datalink::interfaces();
+
+    // Choose a specific network interface (replace "eth0" with the name of your interface)
+    let interface = interfaces
+        .into_iter()
+        .find(|iface| iface.name == "enp2s0")
+        .expect("Network interface not found");
+
+    // Open a data link channel for the selected interface
+    let (mut sender, mut receiver) = match datalink::channel(&interface, Default::default()) {
+        Ok(Channel::Ethernet(tx, rx)) => (tx, rx),
+        Err(err) => {
+            eprintln!("Error opening datalink channel: {}", err);
+            std::process::exit(1);
+        }
+        _ => {
+            eprintln!("Unsupported channel type");
+            std::process::exit(1);
+        }
+    };
+
+    println!("Capturing packets on interface: {}", interface.name);
+
+    // Main packet capture loop
+    loop {
+        match receiver.next() {
+            Ok(packet) => {
+                // Process and analyze the captured packet here
+                println!("Received a packet: {:?}", packet);
+            }
+            Err(err) => {
+                eprintln!("Error capturing packet: {}", err);
+            }
+        }
+    }
+}
